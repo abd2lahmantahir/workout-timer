@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workout Timer</title>
+<meta name="theme-color" content="#d4231b">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: energetic coach, short words, big numbers.
+   IDEA: a gym scoreboard clock.
+   PICTURE: a huge ring clock on a full red field, phase name and next move inside it.
+   COLOUR and TYPE: strong red field, warm white paper, sun-yellow accent; Barlow Condensed numbers, Barlow text.
+   LAYOUT: clock band on top, controls under it, then session setup. */
+:root{color-scheme:light dark;--bg:light-dark(#fbf8f4,#170707);--ink:light-dark(#1d1110,#f6ece8);--red:light-dark(#d4231b,#8e140f);--red2:light-dark(#a8160f,#5c0b08);--sun:#ffd23f;--card:light-dark(#fff,#241010);--line:light-dark(#ead9d2,#43201c);--mute:light-dark(#6f5a55,#c3a9a2)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.num{font-family:"Barlow Condensed",Barlow,sans-serif}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.05;margin:0;font-weight:800;text-wrap:balance}
+h2{font-size:28px;line-height:1.1;margin:0 0 12px;font-weight:800}
+.band{padding:clamp(20px,4vw,48px) max(5vw,16px)}
+.stage{background:radial-gradient(120% 90% at 50% 0%,var(--red),var(--red2));color:#fff}
+.wrap{max-width:1240px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top p{margin:0;opacity:.85}
+.clockrow{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;margin-top:16px}
+.ring{position:relative;width:min(440px,84vw);aspect-ratio:1}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring .in{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:16%}
+.phase{font:800 clamp(20px,4.5vw,30px)/1 "Barlow Condensed";letter-spacing:.02em;color:var(--sun)}
+.time{font:800 clamp(72px,19vw,136px)/1 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.what{font-size:clamp(17px,3.4vw,22px);font-weight:600;line-height:1.2}
+.next{font-size:14px;opacity:.85;margin-top:6px}
+.ctrl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+button,select,input{font:inherit;font-size:16px}
+.btn{min-height:48px;padding:0 22px;border-radius:999px;border:2px solid #fff;background:transparent;color:#fff;font-weight:600;cursor:pointer}
+.btn.go{background:var(--sun);border-color:var(--sun);color:#2a0f0a;min-width:140px;font-size:18px}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+#go.alt{background:transparent;color:#fff;border-color:#fff}
+.pl{margin-top:16px}.pl small{color:var(--mute);font-size:13px}
+.btn:focus-visible,.chip:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.strip{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:22px auto 6px;max-width:760px;background:rgba(255,255,255,.18)}
+.strip i{display:block;height:100%;border-right:1px solid rgba(0,0,0,.25)}
+.strip i.done{opacity:.35}.strip i.now{outline:2px solid #fff;outline-offset:-2px}
+.legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:13px;opacity:.9}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.meta{display:flex;gap:18px;justify-content:center;font-size:14px;opacity:.9;margin-top:6px;flex-wrap:wrap}
+.grid{max-width:820px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.chip{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+label{font-size:14px;color:var(--mute);display:grid;gap:4px}
+input,select,textarea{min-height:44px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);width:100%}
+textarea{font:16px/1.4 Barlow,sans-serif;min-height:96px;resize:vertical}
+.toggles{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px}
+.toggles label{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:15px}
+.toggles input{width:22px;min-height:22px}
+.stage{user-select:none;-webkit-user-select:none}
+#install{display:none}
+.sub{font-size:14px;color:var(--mute);margin:0 0 12px}
+.block{border-top:1px solid var(--line);padding:14px 0 6px}
+.block:first-of-type{border-top:0;padding-top:4px}
+.bhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.bhead strong{font:800 22px/1.1 "Barlow Condensed"}
+.bpm{font-size:14px;color:var(--mute);white-space:nowrap}
+.block.live{background:linear-gradient(90deg,color-mix(in srgb,var(--sun) 28%,transparent),transparent);margin:0 -20px;padding-inline:20px;border-radius:10px}
+.live-tag{font-size:12px;font-weight:600;background:var(--red);color:#fff;border-radius:6px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+ol{margin:8px 0 6px;padding:0;list-style:none;display:grid;gap:6px}
+ol a{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);text-decoration:none;background:var(--bg)}
+ol a:hover{border-color:var(--red)}
+ol a span:last-child{font-size:13px;color:var(--red);font-weight:600;white-space:nowrap}
+:root[data-theme=dark] ol a span:last-child{color:var(--sun)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) ol a span:last-child{color:var(--sun)}}
+.mix{font-size:14px;color:var(--mute)}.mix a{color:inherit}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.small{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--red);background:transparent;color:var(--ink);cursor:pointer;font-weight:600}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.ring circle{transition:none!important}}
+</style></head><body>
+
+<section class="band stage"><div class="wrap">
+ <div class="top"><h1>Workout timer</h1><p id="sumline">Session</p></div>
+ <div class="clockrow"><div class="ring">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10"/><circle id="arc" cx="100" cy="100" r="90" fill="none" stroke="#ffd23f" stroke-width="10" stroke-linecap="round" stroke-dasharray="565.5" stroke-dashoffset="0" style="transition:stroke-dashoffset .25s linear"/></svg>
+  <div class="in"><div class="phase" id="phase">Ready</div><div class="time num" id="time" aria-live="off">0:00</div><div class="what" id="what">Press start</div><div class="next" id="next"></div></div>
+ </div></div>
+ <div class="ctrl"><button class="btn go" id="go">Start</button><button class="btn" id="skip">Skip</button><button class="btn" id="reset">Reset</button></div>
+ <div class="strip" id="strip"></div>
+ <div class="legend"><span><b style="background:#ffb547"></b>Warm-up</span><span><b style="background:#ffd23f"></b>Work</span><span><b style="background:#8fd3ff"></b>Rest</span><span><b style="background:#b9f2c9"></b>Cool-down</span></div>
+ <div class="meta"><span id="elapsed">Elapsed 0:00</span><span id="left">Left 0:00</span></div>
+</div></section>
+
+<section class="band"><div class="grid">
+ <div class="card">
+  <h2>Session</h2>
+  <div class="chips" id="presets"></div>
+  <div class="fields">
+   <label>Warm-up (min)<input id="f-warm" type="number" min="0" max="20" step="1"></label>
+   <label>Work (sec)<input id="f-work" type="number" min="5" max="900" step="5"></label>
+   <label>Rest (sec)<input id="f-rest" type="number" min="0" max="600" step="5"></label>
+   <label>Rounds<input id="f-rounds" type="number" min="1" max="20" step="1"></label>
+   <label>Cool-down (min)<input id="f-cool" type="number" min="0" max="20" step="1"></label>
+  </div>
+  <label style="margin-top:12px">Moves, one per line (each round goes through all of them)<textarea id="f-moves"></textarea></label>
+  <div class="toggles"><label><input type="checkbox" id="t-beep" checked>Beeps</label><label><input type="checkbox" id="t-voice" checked>Voice cues</label><label><input type="checkbox" id="t-vib" checked>Vibrate</label><label><input type="checkbox" id="t-wake" checked>Keep screen on</label></div>
+  <div class="row" style="margin-top:14px"><button class="small" id="install">Install as app</button></div>
+ </div>
+
+</div></section>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem('wt-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('wt-'+k,JSON.stringify(v))}catch(e){}}};
+
+const PRESETS={
+ circuit:{name:'Bodyweight circuit',warm:3,work:40,rest:20,rounds:3,cool:3,int:'push',moves:'Squats\nPush-ups\nLunges\nGlute bridge\nPlank\nStep-ups'},
+ tabata:{name:'Tabata HIIT',warm:4,work:20,rest:10,rounds:2,cool:4,int:'peak',moves:'Jumping jacks\nMountain climbers\nSquat jumps\nHigh knees'},
+ jog:{name:'Walk–jog intervals',warm:5,work:120,rest:120,rounds:6,cool:5,int:'push',moves:'Jog'},
+ quick:{name:'Quick 10',warm:2,work:45,rest:15,rounds:2,cool:2,int:'push',moves:'Squats\nPush-ups\nPlank'}
+};
+let cfg=store.get('cfg',{...PRESETS.circuit,key:'circuit'});
+const opt={beep:true,voice:true,vib:true,wake:true,...store.get('opt',{})};
+let phases=[],idx=0,remain=0,running=false,last=0,timer=null,wake=null,actx=null;
+
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const COL={warm:'#ffb547',work:'#ffd23f',rest:'#8fd3ff',cool:'#b9f2c9'};
+
+function build(){
+ const moves=cfg.moves.split('\n').map(s=>s.trim()).filter(Boolean);if(!moves.length)moves.push('Work');
+ const p=[];
+ if(cfg.warm>0)p.push({type:'warm',label:'Warm-up',what:'Easy movement, loosen up',dur:cfg.warm*60});
+ for(let r=1;r<=cfg.rounds;r++)moves.forEach((m,i)=>{
+  p.push({type:'work',label:`Round ${r}/${cfg.rounds}`,what:m,dur:cfg.work});
+  const lastOne=r===cfg.rounds&&i===moves.length-1;
+  if(cfg.rest>0&&!lastOne)p.push({type:'rest',label:'Rest',what:'Breathe',dur:cfg.rest});
+ });
+ if(cfg.cool>0)p.push({type:'cool',label:'Cool-down',what:'Walk it off, stretch',dur:cfg.cool*60});
+ return p;
+}
+const total=()=>phases.reduce((a,b)=>a+b.dur,0);
+
+function renderStrip(){
+ const T=total();
+ $('strip').innerHTML=phases.map((p,i)=>`<i class="${i<idx?'done':''} ${i===idx&&running?'now':''}" style="width:${p.dur/T*100}%;background:${COL[p.type]}"></i>`).join('');
+}
+function renderClock(){
+ const p=phases[idx];
+ if(!p){$('phase').textContent='Done';$('time').textContent='0:00';$('what').textContent='Great work!';$('next').textContent='';$('arc').style.strokeDashoffset=0;return}
+ $('phase').textContent=p.label;$('time').textContent=fmt(remain);$('what').textContent=p.what;
+ const n=phases[idx+1];$('next').textContent=n?'Next: '+(n.type==='work'?n.what:n.label):'Last one!';
+ $('arc').style.strokeDashoffset=565.5*(1-remain/p.dur);
+ const done=phases.slice(0,idx).reduce((a,b)=>a+b.dur,0)+(p.dur-remain);
+ $('elapsed').textContent='Elapsed '+fmt(done);$('left').textContent='Left '+fmt(total()-done);
+}
+function summary(){
+ const w=phases.filter(p=>p.type==='work').length;
+ $('sumline').textContent=`${PRESETS[cfg.key]?.name||'Custom'} · ${fmt(total())} · ${w} work intervals`;
+}
+
+function beep(f=880,d=.12){if(!opt.beep||!actx)return;try{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(.25,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.start();o.stop(actx.currentTime+d)}catch(e){}}
+function say(t){if(!opt.voice)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=1.05;speechSynthesis.speak(u)}catch(e){}}
+async function keepAwake(on){try{if(on&&opt.wake&&navigator.wakeLock)wake=await navigator.wakeLock.request('screen');else if(!on&&wake){await wake.release();wake=null}}catch(e){}}
+
+function vib(p){if(!opt.vib)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function enter(i){
+ idx=i;const p=phases[i];
+ if(!p){running=false;clearInterval(timer);$('go').textContent='Start';beep(660,.3);setTimeout(()=>beep(990,.4),300);vib([300,150,300,150,600]);say('Workout complete. Great job.');keepAwake(false);renderAll();return}
+ remain=p.dur;beep(p.type==='work'?1040:620,.25);vib(p.type==='work'?[250,120,250]:400);
+ say(p.type==='work'?p.what:p.type==='rest'?'Rest. Next, '+(phases[i+1]?.what||''):p.label);
+ renderAll();
+}
+function tick(){
+ const now=Date.now(),dt=(now-last)/1000;last=now;
+ const before=Math.ceil(remain);remain-=dt;
+ if(remain>0){const after=Math.ceil(remain);if(after!==before&&after<=3){beep(880,.1);vib(60)}renderClock();return}
+ /* catch up if the phone paused this page while it was in the background */
+ let over=-remain,i=idx+1;
+ while(i<phases.length&&over>=phases[i].dur){over-=phases[i].dur;i++}
+ enter(i);if(phases[i]){remain-=over;renderClock()}
+}
+function start(){
+ if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+ try{actx&&actx.resume()}catch(e){}
+ if(idx>=phases.length){idx=0;remain=phases[0]?.dur||0}
+ running=true;last=Date.now();timer=setInterval(tick,200);$('go').textContent='Pause';
+ if(remain===phases[idx].dur)enter(idx);keepAwake(true);renderAll();
+}
+function pause(){running=false;clearInterval(timer);$('go').textContent='Resume';keepAwake(false);renderAll()}
+function reset(){running=false;clearInterval(timer);phases=build();idx=0;remain=phases[0]?.dur||0;$('go').textContent='Start';try{speechSynthesis.cancel()}catch(e){}keepAwake(false);summary();renderAll();$('phase').textContent='Ready';$('what').textContent='Press start'}
+
+function renderAll(){renderStrip();renderClock()}
+
+/* setup UI */
+$('presets').innerHTML=Object.entries(PRESETS).map(([k,p])=>`<button class="chip" data-k="${k}" aria-pressed="${cfg.key===k}">${p.name}</button>`).join('');
+const F={warm:'f-warm',work:'f-work',rest:'f-rest',rounds:'f-rounds',cool:'f-cool',moves:'f-moves'};
+function fill(){for(const k in F)$(F[k]).value=cfg[k]}
+function readForm(){
+ for(const k in F){const v=$(F[k]).value;cfg[k]=k==='moves'?v:Math.max(0,Number(v)||0)}
+ cfg.work=Math.max(5,cfg.work);cfg.rounds=Math.max(1,cfg.rounds);cfg.key='custom';
+ document.querySelectorAll('#presets .chip').forEach(c=>c.setAttribute('aria-pressed','false'));
+ store.set('cfg',cfg);reset();
+}
+$('presets').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;cfg={...PRESETS[b.dataset.k],key:b.dataset.k};store.set('cfg',cfg);
+ document.querySelectorAll('#presets .chip').forEach(c=>c.setAttribute('aria-pressed',c===b));fill();reset()});
+Object.values(F).forEach(id=>$(id).addEventListener('change',readForm));
+$('go').addEventListener('click',()=>running?pause():start());
+$('skip').addEventListener('click',()=>{if(idx<phases.length){enter(idx+1);if(running)last=Date.now()}});
+$('reset').addEventListener('click',reset);
+[['t-beep','beep'],['t-vib','vib'],['t-voice','voice'],['t-wake','wake']].forEach(([id,k])=>{$(id).checked=opt[k];$(id).addEventListener('change',()=>{opt[k]=$(id).checked;store.set('opt',opt)})});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)keepAwake(true)});
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)){e.preventDefault();running?pause():start()}});
+
+let deferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('install').style.display='inline-flex'});
+$('install').addEventListener('click',async()=>{if(!deferred)return;try{deferred.prompt();await deferred.userChoice}catch(e){}deferred=null;$('install').style.display='none'});
+window.addEventListener('appinstalled',()=>{$('install').style.display='none'});
+if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+fill();reset();
+}
+</script>
+</body></html>
