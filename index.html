@@ -97,7 +97,7 @@ input[type=date]{min-height:44px;border:1.5px solid var(--line);border-radius:10
   <div class="lbl">Plan block</div><div class="chips" id="blocks"></div>
   <div class="lbl">Day</div><div class="chips" id="days"></div>
   <div class="sess" id="sess"></div>
-  <p class="note">On call? Tap Pause, answer, and carry on after. Stop if you feel sharp pain; mild soreness in the first weeks is normal.</p>
+  <p class="note">Every day: aim for 7,000+ steps (walk after lunch, take the stairs). On call? Tap Pause, answer, and carry on after. Stop if you feel sharp pain; mild soreness in the first weeks is normal.</p>
  </div>
 
  <div class="card">
@@ -115,8 +115,8 @@ const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('wt2-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('wt2-'+k,JSON.stringify(v))}catch(e){}}};
 
 /* phase colours */
-const COL={ready:'#3d4a5c',work:'#d4231b',rest:'#1f6fd1',brk:'#6a3fc1',walk:'#12895a',jog:'#e0620d',cool:'#0f7f86',done:'#2b2623'};
-const NAME={ready:'Get ready',work:'Work',rest:'Rest',brk:'Round break',walk:'Walk',jog:'Jog',cool:'Cool-down',done:'Done'};
+const COL={ready:'#3d4a5c',work:'#d4231b',rest:'#1f6fd1',brk:'#6a3fc1',walk:'#12895a',jog:'#e0620d',cardio:'#e0620d',cool:'#0f7f86',done:'#2b2623'};
+const NAME={ready:'Get ready',work:'Work',rest:'Rest',brk:'Round break',walk:'Walk',jog:'Jog',cardio:'Cardio',cool:'Cool-down',done:'Done'};
 
 /* exercise plan (12 weeks) */
 const MOVES=[
@@ -127,12 +127,22 @@ const MOVES=[
  {n:'Plank',full:'Full plank, hold strong',adv:'Side plank (switch halfway) or shoulder taps',hAdv:1},
  {n:'Mountain climbers',full:'Steady pace, hips level with shoulders',adv:'Fast pace, or cross-body knee to opposite elbow'}
 ];
+/* indoor cardio (replaces walks) */
+const CARDIO=[
+ {n:'Jumping jacks',base:'Steady rhythm, land softly',adv:'Star jumps'},
+ {n:'High knees',base:'Knees to hip height',adv:'Fast, drive the arms'},
+ {n:'Shadow boxing',base:'Jab-cross, stay light on your feet',adv:'Punch fast, squat every 4 punches'},
+ {n:'Skater hops',base:'Step side to side, touch the floor',adv:'Big jumps side to side'},
+ {n:'Mountain climbers',base:'Steady pace',adv:'Fast pace'}
+];
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const R=(note)=>({k:'rest',note});
+const C=(rounds,work,rest,lvl,note)=>({k:'cardio',rounds,work,rest,lvl,note});
+const OPT='Optional, only if you have time';
 const PLAN=[
- {name:'Weeks 1–4',d:[{k:'walk',min:40},{k:'circ',rounds:3,lvl:'full'},{k:'walk',min:40},{k:'circ',rounds:3,lvl:'full'},R('Travel day'),{k:'walk',min:60,note:'Long walk in Sibu'},R('Rest and meal prep')]},
- {name:'Weeks 5–8',d:[{k:'wj',min:30,jog:2,wk:2},{k:'circ',rounds:4,lvl:'full'},{k:'wj',min:30,jog:2,wk:2},{k:'circ',rounds:4,lvl:'full'},R('Travel day'),{k:'wj',min:45,jog:2,wk:2},{k:'walk',min:20,note:'Rest day — easy 20-min walk'}]},
- {name:'Weeks 9–12',d:[{k:'wj',min:35,jog:3,wk:1},{k:'circ',rounds:4,lvl:'adv'},{k:'wj',min:35,jog:3,wk:1},{k:'circ',rounds:4,lvl:'adv'},R('Travel day'),{k:'wj',min:45,jog:3,wk:1,note:'Aim for 5 km (walk-jog or run)'},{k:'walk',min:20,note:'Rest day — easy 20-min walk'}]}
+ {name:'Weeks 1–4',d:[C(3,40,20,'base'),{k:'circ',rounds:3,lvl:'full'},C(3,40,20,'base'),{k:'circ',rounds:3,lvl:'full'},R('Travel day'),C(3,40,20,'base',OPT),R('Rest and meal prep')]},
+ {name:'Weeks 5–8',d:[C(4,40,20,'base'),{k:'circ',rounds:4,lvl:'full'},C(4,40,20,'base'),{k:'circ',rounds:4,lvl:'full'},R('Travel day'),C(4,40,20,'base',OPT),R('Rest and meal prep')]},
+ {name:'Weeks 9–12',d:[C(4,45,15,'adv'),{k:'circ',rounds:4,lvl:'adv'},C(4,45,15,'adv'),{k:'circ',rounds:4,lvl:'adv'},R('Travel day'),C(4,45,15,'adv',OPT),R('Rest and meal prep')]}
 ];
 
 const opt={beep:true,voice:true,vib:true,wake:true,...store.get('opt',{})};
@@ -161,6 +171,17 @@ function buildSession(){
   });
   const list=MOVES.map(m=>`<li><b>${m.n}</b><span>${s.lvl==='adv'?m.adv:m.full}</span></li>`).join('');
   return{s,title:`Circuit · ${s.rounds} rounds${s.lvl==='adv'?' · Advanced':''}`,sub:'45 s work, 15 s rest, 1 min between rounds',phases:P,list};
+ }
+ if(s.k==='cardio'){
+  P.push({...ready,what:CARDIO[0].n,how:'First move coming up'});
+  const N=s.rounds*CARDIO.length,adv=s.lvl==='adv';let c=0;
+  for(let r=1;r<=s.rounds;r++)CARDIO.forEach(m=>{c++;
+   P.push({type:'cardio',label:`Round ${r}/${s.rounds}`,what:m.n,how:adv?m.adv:m.base,dur:s.work});
+   if(c<N)P.push({type:'rest',label:'Rest',what:'Breathe',how:'',dur:s.rest});
+  });
+  const mins=Math.round(P.reduce((a,b)=>a+b.dur,0)/60);
+  const list=CARDIO.map(m=>`<li><b>${m.n}</b><span>${adv?m.adv:m.base}</span></li>`).join('');
+  return{s,title:`Indoor cardio · ${mins} min${adv?' · Advanced':''}`,sub:(s.note?s.note+' · ':'')+`${s.work} s work, ${s.rest} s rest × ${N}. No time? 10 min skipping rope works too`,phases:P,list};
  }
  if(s.k==='walk'){
   P.push({...ready,what:'Brisk walk',how:'Talk-but-not-sing pace'});
@@ -195,7 +216,7 @@ function renderClock(){
  if(!p){setColour('done');$('phase').textContent='Done';$('time').textContent='✓';$('what').textContent='Great work!';$('how').textContent='Session logged for today';$('next').textContent='';$('arc').style.strokeDashoffset=0;return}
  setColour(running||idx>0||remain<p.dur?p.type:'ready');
  $('phase').textContent=p.label;$('time').textContent=fmt(remain);$('what').textContent=p.what;$('how').textContent=p.how;
- const n=phases[idx+1];$('next').textContent=n?'Next: '+(n.type==='work'?n.what:NAME[n.type]):'Last one!';
+ const n=phases[idx+1];$('next').textContent=n?'Next: '+(n.type==='work'||n.type==='cardio'?n.what:NAME[n.type]):'Last one!';
  $('arc').style.strokeDashoffset=565.5*(1-remain/p.dur);
  const done=phases.slice(0,idx).reduce((a,b)=>a+b.dur,0)+(p.dur-remain);
  $('elapsed').textContent='Elapsed '+fmt(done);$('left').textContent='Left '+fmt(total()-done);
@@ -208,7 +229,7 @@ function vib(p){if(!opt.vib)return;try{navigator.vibrate&&navigator.vibrate(p)}c
 async function keepAwake(on){try{if(on&&opt.wake&&navigator.wakeLock)wake=await navigator.wakeLock.request('screen');else if(!on&&wake){await wake.release();wake=null}}catch(e){}}
 
 function cue(p,i){
- if(p.type==='work')return p.what;
+ if(p.type==='work'||p.type==='cardio')return p.what;
  if(p.type==='rest')return 'Rest. Next, '+(phases[i+1]?.what||'');
  if(p.type==='brk')return 'Round break. One minute. Next, '+(phases[i+1]?.label||'');
  if(p.type==='jog')return 'Jog';
@@ -223,8 +244,8 @@ function finish(){
 }
 function enter(i){
  idx=i;const p=phases[i];if(!p){finish();return}
- remain=p.dur;p.hd=false;beep(p.type==='work'||p.type==='jog'?1040:620,.25);
- vib(p.type==='work'||p.type==='jog'?[250,120,250]:400);say(cue(p,i));renderAll();
+ remain=p.dur;p.hd=false;beep(p.type==='work'||p.type==='jog'||p.type==='cardio'?1040:620,.25);
+ vib(p.type==='work'||p.type==='jog'||p.type==='cardio'?[250,120,250]:400);say(cue(p,i));renderAll();
 }
 function tick(){
  const now=Date.now(),dt=(now-last)/1000;last=now;const p=phases[idx];
@@ -268,7 +289,7 @@ function renderSess(){
 function renderWeek(){
  const log=store.get('log',{});const m=mondayOf(today);
  $('week').innerHTML=DAYS.map((d,i)=>{const dt=new Date(m);dt.setDate(m.getDate()+i);const k=iso(dt);const ok=log[k];
-  const plan=PLAN[autoBlock()].d[i];const tag=plan.k==='rest'?'Rest':plan.k==='circ'?'Circuit':plan.k==='walk'?'Walk':'W-J';
+  const plan=PLAN[autoBlock()].d[i];const tag=plan.k==='rest'?'Rest':plan.k==='circ'?'Circuit':plan.k==='cardio'?(plan.note?'Opt.':'Cardio'):plan.k==='walk'?'Walk':'W-J';
   return `<div class="${ok?'ok':''} ${i===todayIdx?'td':''}" title="${ok||''}"><b>${ok?'✓':dt.getDate()}</b>${d}<br>${tag}</div>`}).join('');
  const w=weekNo();$('wkinfo').textContent=w>12?`Week ${w}: 12-week plan finished, keep going with Weeks 9–12`:`Week ${w} of 12 · ${PLAN[autoBlock()].name}`;
 }
