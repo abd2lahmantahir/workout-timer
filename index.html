@@ -145,7 +145,7 @@ const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const R=(note)=>({k:'rest',note});
 const H=(rounds,work,rest,lvl,note,q)=>({k:'hyb',rounds,work,rest,lvl,note,q});
 const LIGHT='Lighter day: low-impact moves to rest the joints';
-const wk=(r,w,rs,l)=>[H(r,w,rs,l),H(r,w,rs,l),H(r,w,rs,l,LIGHT,1),H(r,w,rs,l),R('Travel day'),H(r,w,rs,l),R('Rest and meal prep')];
+const wk=(r,w,rs,l)=>[H(r,w,rs,l),H(r,w,rs,l),H(r,w,rs,l,LIGHT,1),H(r,w,rs,l),H(r,w,rs,l,'Lighter day before the drive home: low-impact moves',1),R('Weekend rest'),R('Weekend rest and meal prep')];
 const PLAN=[
  {name:'Weeks 1–4',d:wk(2,40,20,'full')},
  {name:'Weeks 5–8',d:wk(2,45,15,'full')},
