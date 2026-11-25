@@ -143,13 +143,13 @@ const WARM=[{n:'March in place',a:'march',how:'Knees up, swing arms'},{n:'Arm ci
 const COOL=[{n:'Quad stretch',a:'quad',how:'Heel to glute, switch legs halfway',sw:'Switch legs'},{n:'Chest stretch',a:'chest',how:'Hands clasped behind, chest up'}];
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const R=(note)=>({k:'rest',note});
-const H=(rounds,work,rest,lvl,note)=>({k:'hyb',rounds,work,rest,lvl,note});
-const EASY={k:'walk',min:10,note:'Easy day: 10-min walk after lunch, stretch if sore'};
-const OPT='Optional, only if you have time';
+const H=(rounds,work,rest,lvl,note,q)=>({k:'hyb',rounds,work,rest,lvl,note,q});
+const LIGHT='Lighter day: low-impact moves to rest the joints';
+const wk=(r,w,rs,l)=>[H(r,w,rs,l),H(r,w,rs,l),H(r,w,rs,l,LIGHT,1),H(r,w,rs,l),R('Travel day'),H(r,w,rs,l),R('Rest and meal prep')];
 const PLAN=[
- {name:'Weeks 1–4',d:[H(2,40,20,'full'),H(2,40,20,'full'),EASY,H(2,40,20,'full'),R('Travel day'),H(2,40,20,'full',OPT),R('Rest and meal prep')]},
- {name:'Weeks 5–8',d:[H(3,40,20,'full'),H(3,40,20,'full'),EASY,H(3,40,20,'full'),R('Travel day'),H(3,40,20,'full',OPT),R('Rest and meal prep')]},
- {name:'Weeks 9–12',d:[H(3,45,15,'adv'),H(3,45,15,'adv'),EASY,H(3,45,15,'adv'),R('Travel day'),H(3,45,15,'adv',OPT),R('Rest and meal prep')]}
+ {name:'Weeks 1–4',d:wk(2,40,20,'full')},
+ {name:'Weeks 5–8',d:wk(2,45,15,'full')},
+ {name:'Weeks 9–12',d:wk(2,45,15,'adv')}
 ];
 
 const opt={beep:true,voice:true,vib:true,wake:true,quiet:false,...store.get('opt',{})};
@@ -168,7 +168,7 @@ function buildSession(){
  const s=PLAN[block].d[day];const P=[];const ready={type:'ready',label:'Get ready',what:'',how:'',dur:10};
  if(s.k==='rest')return{s,title:'Rest day',sub:s.note,phases:[],list:''};
  if(s.k==='hyb'){
-  const q=opt.quiet,adv=s.lvl==='adv';
+  const q=opt.quiet||!!s.q,adv=s.lvl==='adv';
   const mv=MOVES.map(m=>({...m,how:adv?((q&&(m.advQ||m.q))||m.adv):((q&&m.q)||m.full),anim:(q&&m.qa)||m.a,half:adv&&m.hAdv}));
   P.push({...ready,what:'Warm-up',how:'March in place first',a:'march'});
   WARM.forEach(w=>P.push({type:'warm',label:'Warm-up',what:w.n,how:w.how,dur:60,a:w.a,sw:w.sw}));
@@ -181,7 +181,7 @@ function buildSession(){
   COOL.forEach(c=>P.push({type:'cool',label:'Cool-down',what:c.n,how:c.how,dur:60,a:c.a,sw:c.sw}));
   const li=(a,n,sub)=>`<li class="mv"><svg class="mini" viewBox="0 10 120 155" data-a="${a}" aria-hidden="true"><g></g></svg><div><b>${n}</b><span>${sub}</span></div></li>`;
   const list=`<li class="ex"><b>Warm-up · 3 min</b><span>${WARM.map(w=>w.n).join(', ')}</span></li>`+mv.map(m=>li(m.anim,m.n,(m.t==='S'?'Strength':'Cardio')+' · '+m.how)).join('')+`<li class="ex"><b>Cool-down · 2 min</b><span>${COOL.map(c=>c.n).join(', ')}</span></li>`;
-  return{s,title:`Hybrid circuit · ${s.rounds} rounds${adv?' · Advanced':''}${q?' · Quiet':''}`,sub:(s.note?s.note+' · ':'')+`${s.work} s work, ${s.rest} s rest, strength and cardio alternate`,phases:P,list};
+  return{s,title:`Hybrid circuit · ${s.rounds} rounds${adv?' · Advanced':''}${s.q?' · Low-impact':q?' · Quiet':''}`,sub:(s.note?s.note+' · ':'')+`${s.work} s work, ${s.rest} s rest, strength and cardio alternate`,phases:P,list};
  }
  if(s.k==='walk'){
   P.push({...ready,what:'Brisk walk',how:'Talk-but-not-sing pace'});
@@ -366,7 +366,7 @@ function renderSess(){
 function renderWeek(){
  const log=store.get('log',{});const m=mondayOf(today);
  $('week').innerHTML=DAYS.map((d,i)=>{const dt=new Date(m);dt.setDate(m.getDate()+i);const k=iso(dt);const ok=log[k];
-  const plan=PLAN[autoBlock()].d[i];const tag=plan.k==='rest'?'Rest':plan.k==='hyb'?(plan.note?'Opt.':'Hybrid'):plan.k==='walk'?(plan.min<=10?'Easy':'Walk'):'W-J';
+  const plan=PLAN[autoBlock()].d[i];const tag=plan.k==='rest'?'Rest':plan.k==='hyb'?(plan.q?'Light':'Hybrid'):plan.k==='walk'?(plan.min<=10?'Easy':'Walk'):'W-J';
   return `<div class="${ok?'ok':''} ${i===todayIdx?'td':''}" title="${ok||''}"><b>${ok?'✓':dt.getDate()}</b>${d}<br>${tag}</div>`}).join('');
  const w=weekNo();$('wkinfo').textContent=w>12?`Week ${w}: 12-week plan finished, keep going with Weeks 9–12`:`Week ${w} of 12 · ${PLAN[autoBlock()].name}`;
 }
