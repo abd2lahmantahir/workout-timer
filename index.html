@@ -309,6 +309,10 @@ const QS={h:[63,44],s:[61,61],p:[60,96],kf:[60,124],ff:[60,153],kn:[57,124],fn:[
 const QS2={...QS,h:[64,44],ef:[73,71],hf:[88,67]};
 const CS={h:[67,43],s:[64,60],p:[60,96],kn:[60,124],fn:[60,153],kf:[57,124],ff:[57,153],en:[50,74],hn:[40,88],ef:[48,75],hf:[38,89]};
 const CS2={...CS,hn:[39,83],hf:[37,84],en:[50,72],ef:[48,73]};
+/* skater: land on one bent leg, trailing leg swings behind (grey), opposite hand reaches to the standing foot */
+const mirX=P=>{const o={};for(const k in P)o[k]=[120-P[k][0],P[k][1]];return o};
+const SK2L={h:[36,62],s:[37,78],p:[39,110],sN:[43,80],sF:[31,80],pN:[35,110],pF:[43,110],kn:[28,131],fn:[31,153],kf:[55,127],ff:[68,141],en:[37,100],hn:[29,121],ef:[22,72],hf:[13,62]};
+const SK2M={h:[60,42],s:[60,58],p:[60,96],sN:[67,60],sF:[53,60],pN:[64,96],pF:[56,96],kn:[67,120],fn:[70,143],kf:[53,120],ff:[50,143],en:[73,78],hn:[79,92],ef:[47,78],hf:[41,92]};
 const ANIM={
  march:{v:'side',hl:['thighN','thighF'],sq:[[MA,.5],[MB,.5]]},
  arms:{v:'front',hl:['uaN','faN','uaF','faF'],sq:AC.map(p=>[p,.22]),lin:1},
@@ -319,7 +323,7 @@ const ANIM={
  lunge:{v:'side',hl:['thighN','thighF'],sq:[[ST,.4],[LU,1.1],[LU,.3],[ST,1]]},
  box:{v:'side',hl:['uaN','faN','uaF','faF'],sq:[[BG,.3],[BJ,.18],[BG,.22],[BC,.18],[BG,.22]]},
  superman:{v:'side',toe:0,hl:['torso','thighN','thighF'],sq:[[SR,.6],[SU,.9],[SU,1.5],[SR,.8]]},
- skater:{v:'front',hl:['thighN','thighF'],sq:[[SKL,.35],[SKL,.15],[SKM,.25],[mir(SKL),.25],[mir(SKL),.15],[SKM,.25]]},
+ skater:{v:'skate',toe:0,hl:['thighN','thighF'],sq:[[SK2L,.3],[SK2L,.15],[SK2M,.22],[mirX(SK2L),.22],[mirX(SK2L),.15],[SK2M,.22]]},
  plank:{v:'side',toe:0,hl:['torso'],sq:[[PL,1.2],[PL2,1.2]]},
  mc:{v:'side',toe:0,hl:['torso','thighN','thighF'],sq:[[MC1,.3],[MC2,.3]]},
  quad:{v:'side',hl:['thighN'],sq:[[QS,1.4],[QS2,1.4]]},
